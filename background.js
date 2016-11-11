@@ -7,39 +7,19 @@
 var SE = (function() {
 	
 	// Scrape the page's search query:
-	function getQuery() {
-		return chrome.tabs.query({active: true, currentWindow: true}, function(tab) {
-			// Identify current search site:
-			var url = tab[0].url;
-			console.info("Location:", url);
-			
-			// Scrape search query from main input:
-			var selector;
-			// DuckDuckGo's input field:
-			if (url.indexOf('duckduckgo') !== -1) {
-				selector = "#search_form_input";
-			}
-			// Startpage's input field:
-			else if (url.indexOf('startpage') !== -1) {
-				selector = "#query_top";
-			}
-			// Try generic selector for Google + any other sites:
-			else {
-				selector = 'input[name="q"]';
-			}
-			console.info("Sel:", selector)
-			
+	function getPageQuery() {
+		return chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
 			// Send message to the content script to get back query:
-			return chrome.tabs.sendMessage(tab.id, {selector: selector}, function(resp) {
-				console.log("R:", resp);
-				return resp;
+			return chrome.tabs.sendMessage(tabs[0].id, {message: "Hi"}, function(resp) {
+				console.log("Response:", resp.query);
+				return resp.query;
 			});
 		});
 	}
 
 	
 	// Launch a new search in a new tab:
-	function launch(engine, query) {
+	function launchSearch(engine, query) {
 		var urls = {
 			"ddg": "https://duckduckgo.com/?q=",		// ok
 			"gg":  "https://www.google.co.uk/#q=",		// ok
@@ -60,16 +40,20 @@ var SE = (function() {
 		// Add onclick listener for buttons:
 		document.body.addEventListener('click', function(e) {
 			var engine = e.target.name;
-			console.log(engine, "clicked");
-			SE.launch(engine, SE.getQuery());
+			var query = SE.getPageQuery()
+			console.log(engine, "clicked,", query);
+			// Small delay to ensure we have a query:
+			setTimeout(function() {
+				SE.launchSearch(engine, query);
+			}, 500);
 		});
 	}
 
 	
 	// Reveal module publicly:
 	return {
-		getQuery: getQuery,
-		launch: launch,
+		getPageQuery: getPageQuery,
+		launchSearch: launchSearch,
 		init: init
 	};
 
